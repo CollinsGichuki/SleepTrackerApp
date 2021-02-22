@@ -15,3 +15,51 @@
  */
 
 package com.example.android.trackmysleepquality.database
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+
+@Database(entities = [SleepNight::class], version = 2, exportSchema = false)
+abstract class SleepDatabase : RoomDatabase() {
+    abstract val sleepDatabaseDao: SleepDatabaseDao
+
+    /*
+    The Companion Object allows the Database Clients to access the methods for creating or getting the db without instantiating the class
+    The only reason for this class is to provide a Database hence no need to ever instantiate it
+    */
+    companion object {
+        /*
+        This variable keeps a ref of the db after it has been created which will help to avoid repeatedly opening connections to the db
+        The value of a Volatile variable will never be cached and all writes and reads to the db will be done from the main memory
+        This helps make sure the value of INSTANCE is always up-to-date and the same to all execution threads.
+        It means that changes made by one thread to INSTANCE are visible to all other threads immediately,
+        and you don't get a situation where, say, two threads each update the same entity in a cache, which would create a problem.
+        */
+        @Volatile
+        private var INSTANCE: SleepDatabase? = null
+
+        fun getInstance(context: Context): SleepDatabase {
+            //synchronized means only one thread of execution at a time can enter this block of code
+            // which makes sure the db only gets initialized once
+            synchronized(this) {
+                var instance = INSTANCE
+
+                if (instance == null) {
+                    instance = Room.databaseBuilder(
+                            context.applicationContext,
+                            SleepDatabase::class.java,
+                            "sleep_history_database"
+                    )
+                            .fallbackToDestructiveMigration()
+                            .build()
+
+                    INSTANCE = instance
+                }
+
+                return instance
+            }
+        }
+    }
+}

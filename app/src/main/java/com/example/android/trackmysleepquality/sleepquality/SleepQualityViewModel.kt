@@ -15,3 +15,36 @@
  */
 
 package com.example.android.trackmysleepquality.sleepquality
+
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.android.trackmysleepquality.database.SleepDatabaseDao
+import kotlinx.coroutines.launch
+
+class SleepQualityViewModel(
+        private val sleepNightKey: Long = 0L,
+        private val sleepDatabaseDao: SleepDatabaseDao
+) : ViewModel() {
+    //Navigation LiveData
+    private val _navigateToSleepTracker = MutableLiveData<Boolean?>()
+    val navigateToSleepTracker: LiveData<Boolean?>
+        get() = _navigateToSleepTracker
+
+    fun doneNavigating() {
+        _navigateToSleepTracker.value = null
+    }
+
+    //ClickHandler for all the sleep quality images to use
+    fun onSetSleepQuality(quality: Int) {
+        viewModelScope.launch {
+            val tonight = sleepDatabaseDao.get(sleepNightKey) ?: return@launch
+            tonight.sleepQuality = quality
+            sleepDatabaseDao.update(tonight)
+
+            // Setting this state variable to true will alert the observer and trigger navigation.
+            _navigateToSleepTracker.value = true
+        }
+    }
+}
